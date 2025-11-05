@@ -3,7 +3,6 @@ import CoverHero from './components/CoverHero.jsx';
 import IncomeForm from './components/IncomeForm.jsx';
 import IncomeChart from './components/IncomeChart.jsx';
 import IncomeTable from './components/IncomeTable.jsx';
-import { supabase } from './supabaseClient.js';
 
 function currency(amount) {
   try {
@@ -13,52 +12,49 @@ function currency(amount) {
   }
 }
 
+// Preview mode: local dummy data (no Supabase calls)
+const DUMMY_DATA = [
+  { id: 1, platform: 'YouTube', amount: 220.5, date: new Date().toISOString().slice(0, 10), notes: 'Adsense' },
+  { id: 2, platform: 'Patreon', amount: 145.0, date: new Date(Date.now() - 86400000 * 1).toISOString().slice(0, 10), notes: 'Members' },
+  { id: 3, platform: 'TikTok', amount: 80.25, date: new Date(Date.now() - 86400000 * 3).toISOString().slice(0, 10), notes: 'Creator Fund' },
+  { id: 4, platform: 'Gumroad', amount: 59.99, date: new Date(Date.now() - 86400000 * 7).toISOString().slice(0, 10), notes: 'Course' },
+];
+
 export default function App() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   const total = useMemo(() => items.reduce((sum, it) => sum + Number(it.amount || 0), 0), [items]);
 
-  const fetchItems = async () => {
-    setLoading(true);
-    setError('');
-    const { data, error } = await supabase
-      .from('income')
-      .select('*')
-      .order('date', { ascending: true });
-    if (error) {
-      setError(error.message);
-    } else {
-      setItems(data || []);
-    }
-    setLoading(false);
-  };
-
+  // Simulate fetching from API
   useEffect(() => {
-    fetchItems();
+    setLoading(true);
+    const t = setTimeout(() => {
+      setItems([...DUMMY_DATA].sort((a, b) => new Date(a.date) - new Date(b.date)));
+      setLoading(false);
+    }, 300);
+    return () => clearTimeout(t);
   }, []);
 
   const addEntry = async (entry) => {
-    const { data, error } = await supabase
-      .from('income')
-      .insert([{ platform: entry.platform, amount: entry.amount, date: entry.date, notes: entry.notes }])
-      .select();
-    if (error) {
-      setError(error.message);
-    } else if (data && data.length) {
-      setItems((prev) => [...prev, data[0]].sort((a, b) => new Date(a.date) - new Date(b.date)));
-    }
+    // Simulate network call
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const newItem = { id: Date.now(), ...entry };
+        setItems((prev) => [...prev, newItem].sort((a, b) => new Date(a.date) - new Date(b.date)));
+        resolve(newItem);
+      }, 250);
+    });
   };
 
   const deleteEntry = async (id) => {
-    const prev = items;
-    setItems((cur) => cur.filter((x) => x.id !== id));
-    const { error } = await supabase.from('income').delete().eq('id', id);
-    if (error) {
-      setError(error.message);
-      setItems(prev);
-    }
+    // Simulate network call
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        setItems((cur) => cur.filter((x) => x.id !== id));
+        resolve(true);
+      }, 200);
+    });
   };
 
   return (
@@ -68,10 +64,6 @@ export default function App() {
 
         <div className="mt-6 grid grid-cols-1 gap-6">
           <IncomeForm onAdd={addEntry} />
-
-          {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 p-3 text-sm">{error}</div>
-          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <div className="lg:col-span-3">
