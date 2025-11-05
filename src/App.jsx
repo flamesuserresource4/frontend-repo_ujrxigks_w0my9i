@@ -1,98 +1,105 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import CoverHero from './components/CoverHero.jsx';
-import IncomeForm from './components/IncomeForm.jsx';
-import IncomeChart from './components/IncomeChart.jsx';
-import IncomeTable from './components/IncomeTable.jsx';
+import SummaryCard from './components/SummaryCard';
+import IncomeForm from './components/IncomeForm';
+import IncomeChart from './components/IncomeChart';
+import IncomeTable from './components/IncomeTable';
 
-function currency(amount) {
-  try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(amount || 0);
-  } catch {
-    return `$${Number(amount || 0).toFixed(2)}`;
-  }
-}
-
-// Preview mode: local dummy data (no Supabase calls)
+// Preview mode dummy data (kept as-is; Supabase client remains available for live mode)
 const DUMMY_DATA = [
-  { id: 1, platform: 'YouTube', amount: 220.5, date: new Date().toISOString().slice(0, 10), notes: 'Adsense' },
-  { id: 2, platform: 'Patreon', amount: 145.0, date: new Date(Date.now() - 86400000 * 1).toISOString().slice(0, 10), notes: 'Members' },
-  { id: 3, platform: 'TikTok', amount: 80.25, date: new Date(Date.now() - 86400000 * 3).toISOString().slice(0, 10), notes: 'Creator Fund' },
-  { id: 4, platform: 'Gumroad', amount: 59.99, date: new Date(Date.now() - 86400000 * 7).toISOString().slice(0, 10), notes: 'Course' },
+  { id: '1', platform: 'YouTube', amount: 250.0, date: '2025-01-05', notes: 'Ad revenue' },
+  { id: '2', platform: 'Patreon', amount: 120.0, date: '2025-01-10', notes: 'Monthly supporters' },
+  { id: '3', platform: 'Gumroad', amount: 75.5, date: '2025-01-12', notes: 'Ebook sales' },
+  { id: '4', platform: 'Twitch', amount: 90.0, date: '2025-01-18', notes: 'Subscriptions + bits' },
 ];
 
-export default function App() {
-  const [items, setItems] = useState([]);
+function useEntriesPreview() {
+  const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
-  const total = useMemo(() => items.reduce((sum, it) => sum + Number(it.amount || 0), 0), [items]);
-
-  // Simulate fetching from API
+  // initial fetch simulation
   useEffect(() => {
-    setLoading(true);
     const t = setTimeout(() => {
-      setItems([...DUMMY_DATA].sort((a, b) => new Date(a.date) - new Date(b.date)));
+      setEntries([...DUMMY_DATA].sort((a, b) => (a.date < b.date ? 1 : -1)));
       setLoading(false);
     }, 300);
     return () => clearTimeout(t);
   }, []);
 
-  const addEntry = async (entry) => {
-    // Simulate network call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newItem = { id: Date.now(), ...entry };
-        setItems((prev) => [...prev, newItem].sort((a, b) => new Date(a.date) - new Date(b.date)));
-        resolve(newItem);
-      }, 250);
-    });
+  const addEntry = (payload) => {
+    setAdding(true);
+    setTimeout(() => {
+      const newItem = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        ...payload,
+      };
+      setEntries((prev) => [newItem, ...prev].sort((a, b) => (a.date < b.date ? 1 : -1)));
+      setAdding(false);
+    }, 350);
   };
 
-  const deleteEntry = async (id) => {
-    // Simulate network call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        setItems((cur) => cur.filter((x) => x.id !== id));
-        resolve(true);
-      }, 200);
-    });
+  const deleteEntry = (id) => {
+    setDeletingId(id);
+    setTimeout(() => {
+      setEntries((prev) => prev.filter((e) => e.id !== id));
+      setDeletingId(null);
+    }, 300);
   };
+
+  return { entries, loading, adding, deletingId, addEntry, deleteEntry };
+}
+
+export default function App() {
+  const { entries, loading, adding, deletingId, addEntry, deleteEntry } = useEntriesPreview();
+
+  const total = useMemo(() => entries.reduce((sum, e) => sum + Number(e.amount || 0), 0), [entries]);
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
-        <CoverHero total={total} />
+    <div className="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-fuchsia-50 to-sky-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900">
+      {/* Ambient gradient texture */}
+      <div className="pointer-events-none fixed inset-0 opacity-60 mix-blend-multiply" aria-hidden>
+        <div className="absolute -top-40 -left-40 h-80 w-80 rounded-full bg-purple-300 blur-3xl" />
+        <div className="absolute top-20 right-0 h-72 w-72 rounded-full bg-pink-300 blur-3xl" />
+        <div className="absolute bottom-0 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-blue-300 blur-3xl" />
+      </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6">
-          <IncomeForm onAdd={addEntry} />
+      <main className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+        <header className="mb-8 sm:mb-10">
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            CreatorPay Manual Income Tracker
+          </h1>
+          <p className="mt-2 text-slate-600 dark:text-slate-300">
+            Track manual income across platforms with a clean, gradient-themed dashboard.
+          </p>
+        </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <div className="lg:col-span-3">
-              <IncomeChart items={items} />
-            </div>
-            <div className="lg:col-span-2">
-              <div className="w-full bg-white border border-gray-200 rounded-xl p-4 md:p-6 shadow-sm">
-                <h3 className="text-base md:text-lg font-semibold text-gray-900">Summary</h3>
-                <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
-                  <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                    <div className="text-gray-500">Total</div>
-                    <div className="text-lg font-semibold text-gray-900">{currency(total)}</div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                    <div className="text-gray-500">Entries</div>
-                    <div className="text-lg font-semibold text-gray-900">{items.length}</div>
-                  </div>
-                </div>
-              </div>
+        <section className="grid grid-cols-1 gap-6">
+          <SummaryCard total={total} count={entries.length} />
+
+          <div className="rounded-2xl p-[1px] bg-gradient-to-tr from-purple-500/50 via-pink-500/50 to-blue-500/50">
+            <div className="rounded-2xl bg-white/80 dark:bg-slate-900/70 backdrop-blur p-5 sm:p-6">
+              <IncomeForm onAdd={addEntry} loading={adding} />
             </div>
           </div>
 
-          <IncomeTable items={items} onDelete={deleteEntry} />
+          <IncomeChart entries={entries} />
 
-          {loading && (
-            <div className="text-center text-gray-500 text-sm">Loading data...</div>
-          )}
-        </div>
-      </div>
+          <div>
+            {loading ? (
+              <div className="rounded-2xl bg-white/80 dark:bg-slate-900/70 backdrop-blur p-6 text-slate-600 dark:text-slate-300">
+                Loading entries...
+              </div>
+            ) : entries.length === 0 ? (
+              <div className="rounded-2xl bg-white/80 dark:bg-slate-900/70 backdrop-blur p-6 text-slate-600 dark:text-slate-300">
+                No entries yet. Add your first income above.
+              </div>
+            ) : (
+              <IncomeTable entries={entries} onDelete={deleteEntry} deletingId={deletingId} />
+            )}
+          </div>
+        </section>
+      </main>
     </div>
   );
 }

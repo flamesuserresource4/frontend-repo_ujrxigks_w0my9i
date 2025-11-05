@@ -1,110 +1,65 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 
-const PLATFORMS = [
-  'YouTube',
-  'TikTok',
-  'Patreon',
-  'Twitch',
-  'Instagram',
-  'OnlyFans',
-  'Ko-fi',
-  'Gumroad',
-  'Shopify',
-  'Other',
-];
+export default function IncomeForm({ onAdd, loading }) {
+  const [platform, setPlatform] = useState('');
+  const [amount, setAmount] = useState('');
+  const [date, setDate] = useState('');
+  const [notes, setNotes] = useState('');
 
-const Input = ({ label, children }) => (
-  <label className="flex flex-col gap-1 text-sm text-gray-700">
-    <span className="font-medium">{label}</span>
-    {children}
-  </label>
-);
-
-const IncomeForm = ({ onAdd }) => {
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const [form, setForm] = useState({ platform: 'YouTube', amount: '', date: today, notes: '' });
-  const [loading, setLoading] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const amountNum = Number(form.amount);
-    if (!form.platform || !form.date || isNaN(amountNum) || amountNum <= 0) return;
-    setLoading(true);
-    try {
-      await onAdd({ ...form, amount: amountNum });
-      setForm({ platform: 'YouTube', amount: '', date: today, notes: '' });
-    } finally {
-      setLoading(false);
-    }
+    if (!platform || !amount || !date) return;
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount)) return;
+    onAdd({ platform, amount: parsedAmount, date, notes });
+    setPlatform('');
+    setAmount('');
+    setDate('');
+    setNotes('');
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full bg-white border border-gray-200 rounded-xl p-4 md:p-6 shadow-sm space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Add Income</h2>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Input label="Platform">
-          <select
-            name="platform"
-            value={form.platform}
-            onChange={handleChange}
-            className="h-10 rounded-lg border-gray-300 focus:border-gray-500 focus:ring-gray-500"
-          >
-            {PLATFORMS.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        </Input>
-        <Input label="Amount">
-          <input
-            type="number"
-            name="amount"
-            inputMode="decimal"
-            min="0"
-            step="0.01"
-            value={form.amount}
-            onChange={handleChange}
-            placeholder="0.00"
-            className="h-10 rounded-lg border-gray-300 focus:border-gray-500 focus:ring-gray-500"
-            required
-          />
-        </Input>
-        <Input label="Date">
-          <input
-            type="date"
-            name="date"
-            value={form.date}
-            onChange={handleChange}
-            className="h-10 rounded-lg border-gray-300 focus:border-gray-500 focus:ring-gray-500"
-            required
-          />
-        </Input>
-        <Input label="Notes">
-          <input
-            type="text"
-            name="notes"
-            value={form.notes}
-            onChange={handleChange}
-            placeholder="Optional"
-            className="h-10 rounded-lg border-gray-300 focus:border-gray-500 focus:ring-gray-500"
-          />
-        </Input>
+    <form onSubmit={handleSubmit} className="w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <input
+          type="text"
+          placeholder="Platform"
+          value={platform}
+          onChange={(e) => setPlatform(e.target.value)}
+          className="w-full rounded-xl border border-white/30 bg-white/60 dark:bg-slate-900/40 backdrop-blur placeholder:text-slate-400 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-400/60"
+        />
+        <input
+          type="number"
+          placeholder="Amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="w-full rounded-xl border border-white/30 bg-white/60 dark:bg-slate-900/40 backdrop-blur placeholder:text-slate-400 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-400/60"
+        />
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="w-full rounded-xl border border-white/30 bg-white/60 dark:bg-slate-900/40 backdrop-blur px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-400/60"
+        />
+        <input
+          type="text"
+          placeholder="Notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="w-full rounded-xl border border-white/30 bg-white/60 dark:bg-slate-900/40 backdrop-blur placeholder:text-slate-400 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-400/60"
+        />
       </div>
-      <div className="flex justify-end">
+      <div className="mt-4 flex justify-end">
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-gray-900 text-white hover:bg-black disabled:opacity-50"
+          className="relative inline-flex items-center gap-2 rounded-xl px-5 py-3 text-white transition focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {loading ? 'Adding...' : 'Add Entry'}
+          <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600" />
+          <span className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-purple-600/30 via-pink-500/30 to-blue-600/30 blur-md" aria-hidden />
+          <span className="relative font-medium">{loading ? 'Adding...' : 'Add Entry'}</span>
         </button>
       </div>
     </form>
   );
-};
-
-export default IncomeForm;
+}
